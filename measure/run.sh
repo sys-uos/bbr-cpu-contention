@@ -28,27 +28,26 @@ LOSS_PARAMS=$(echo $LOSS | cut -d " " -f 2-)
 NETWORK_BUFFER_SIZE=$(python3 calculate_bdp.py --rate $BW --rtt $RTT --factor $BUFFER)
 SOCKET_BUFFER_SIZE=2147483647
 
-printf "\n"
-echo "Start measurement..."
-echo "Assumes that sudo does not require a password, make sure to add '<USER> ALL=(ALL) NOPASSWD: ALL' to sudo visudo"
+echo "----- Start measurement..."
+echo "----- Assumes that sudo does not require a password, make sure to add '<USER> ALL=(ALL) NOPASSWD: ALL' to sudo visudo"
 
-printf "\n"
-echo "Create folder..."
+
+# Create log folder
 LOGDIR="logs/$(date +"%Y%m%d-%H%M%S")"
 mkdir -p ${LOGDIR}
 mkdir ${LOGDIR}/sender
 mkdir ${LOGDIR}/emulator
 
-printf "\n"
-echo "Prepare emulator..."
+
+# Prepare and launch link emulator
 scp setup_emulator.sh $EMULATOR_SSH:
 scp calculate_bdp.py $EMULATOR_SSH:
 ssh $EMULATOR_SSH -o LogLevel=FATAL << EOA
 sudo bash setup_emulator.sh $EMULATOR_IFACE_LEFT $EMULATOR_IFACE_RIGHT $BW $NETWORK_BUFFER_SIZE $RTT $LOSS_MODE "$LOSS_PARAMS" $SEED
 EOA
 
-printf "\n"
-echo "Prepare receiver..."
+
+# Prepare and launch iperf3 receiver
 ssh $RECEIVER_SSH -o LogLevel=FATAL << EOB
 sudo rm -rf /tmp/*
 sudo sysctl -w net.core.rmem_max=$SOCKET_BUFFER_SIZE
@@ -58,27 +57,30 @@ sudo sysctl -w net.ipv4.tcp_wmem="4096 16384 $SOCKET_BUFFER_SIZE"
 nohup iperf3 > tmp.log 2> tmp.log &
 EOB
 
-echo "Prepare sender (centaur03)..."
+
+# Prepare iperf3 sender
 sudo sysctl -w net.core.rmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.core.wmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.ipv4.tcp_rmem="4096 131072 $SOCKET_BUFFER_SIZE"
 sudo sysctl -w net.ipv4.tcp_wmem="4096 16384 $SOCKET_BUFFER_SIZE"
 sudo sysctl -w net.ipv4.tcp_window_scaling=1
 
-cd debianbuild
 
-# launch new VM
+# Launch new VM
 sudo killall qemu-system-x86_64
 sleep 1
 
+cd debianbuild
 sudo bash qemu.sh $DISK $CPUS
-
 cd ..
 
-# deadline scheduling
+
+# Apply deadline scheduling to vCPUs
 bash apply_sched_dead.sh $DEADLINE_RUN $DEADLINE_PERIOD &
 sleep 1
 
+
+# Run iperf3 measurement from VM
 ssh $VM_SSH << EOB
  rm iperf_*.json
  
@@ -99,7 +101,6 @@ ssh $VM_SSH << EOB
  if [[ $CCA != "cubic" ]]; then
   sysctl -w net.ipv4.tcp_allowed_congestion_control="$CCA cubic"
  fi
-
  
  LIMIT=$N
  for ((i=1; i<=LIMIT; i++)); do
@@ -111,6 +112,7 @@ ssh $VM_SSH << EOB
 EOB
 
 
+# Build meta data file
 JSON_CONFIG=$( jq -n \
                   --arg buffer_bdp "$BUFFER" \
                   --arg kernel "$KERNEL" \
@@ -130,6 +132,8 @@ JSON_CONFIG=$( jq -n \
 
 echo $JSON_CONFIG > ${LOGDIR}/meta.json
 
+
+# Collect iperf3 logfiles
 for ((i=1; i<=N; i++)); do
  scp $VM_SSH:iperf_$i.json ${LOGDIR}/sender/;
 done
@@ -138,6 +142,7 @@ ssh $VM_SSH << EOB
  rm iperf_*.json
 EOB
 
-sudo killall qemu-system-x86_64
 
-echo "All done!"
+# Finish up
+sudo killall qemu-system-x86_64
+echo "----- All done!"
