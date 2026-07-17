@@ -43,7 +43,6 @@ elif [[ $KERNEL = "BBRv2_fixed" ]]; then
   DISK="debian-11.qcow2"
 elif [[ $KERNEL = "kernel6-1_fixed" ]] || [[ $KERNEL = "kernel6-1_fixed" ]]; then
   DISK="fixed_debian.qcow2"
-  echo "Fixed kernel"
 else
   echo "Kernel not supported"
   exit 0
@@ -77,7 +76,7 @@ sudo sysctl -w net.core.rmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.core.wmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.ipv4.tcp_rmem="4096 131072 $SOCKET_BUFFER_SIZE"
 sudo sysctl -w net.ipv4.tcp_wmem="4096 16384 $SOCKET_BUFFER_SIZE"
-# $RECEIVER_SSH runs a daemon iperf3 server...
+nohup iperf3 > tmp.log 2> tmp.log &
 EOB
 
 echo "Prepare sender (centaur03)..."
