@@ -16,9 +16,9 @@ DEADLINE_PERIOD=${10}
 CPUS=2
 N=4
 
-if [ "$#" -lt 11 ]; then
-    echo "Usage: bash run.sh DISK LOSS['random 0.1 25', 'gemodel 0.1 95 50 0.01'] BANDWIDTH[in mbit] RTT[in ms] BUFFER[in BDP] (SEED) (PARALLEL) (CCA) (CPUS)"
-    echo Example: bash run.sh BBRv3 iperf3 "none" 800 20 3.0 1740753059782645566 1740753063782943194 1.0 cubic net.core.default_qdisc=pfifo_fast
+if [ "$#" -lt 10 ]; then
+    echo "Usage: bash run.sh DISK[e.g. foo.qcow2] LOSS['none', 'random 0.1 25', 'gemodel 0.1 95 50 0.01'] BANDWIDTH[in mbit] RTT[in ms] BUFFER[in BDP] SEED PARALLEL CCA SCHED_DEADLINE_RUN[in ns] SCHED_DEADLINE_PERIOD[in ns]"
+    echo Example: bash run.sh debian.qcow2 "none" 100 20 1.0 1740753059782645566 1.0 cubic 10000000 50000000
     exit -1
 fi
 
@@ -64,7 +64,6 @@ sudo sysctl -w net.core.wmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.ipv4.tcp_rmem="4096 131072 $SOCKET_BUFFER_SIZE"
 sudo sysctl -w net.ipv4.tcp_wmem="4096 16384 $SOCKET_BUFFER_SIZE"
 sudo sysctl -w net.ipv4.tcp_window_scaling=1
-
 
 cd debianbuild
 
