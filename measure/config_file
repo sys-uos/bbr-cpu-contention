@@ -1,0 +1,11 @@
+RUNNER_SSH="bowtruckle"
+RUNNER_IPERF="192.0.3.7/24"
+RUNNER_IFACE="enp2s0f3"
+VM_SSH="root@192.0.3.21"
+
+EMULATOR_SSH="glowbug"
+EMULATOR_IFACE_LEFT="enp2s0f3"    # faced towards runner
+EMULATOR_IFACE_RIGHT="enp2s0f2"   # faced towards receiver
+
+RECEIVER_SSH="tibbles"
+RECEIVER_IPERF="192.0.2.7"
