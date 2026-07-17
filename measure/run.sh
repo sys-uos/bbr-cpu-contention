@@ -1,16 +1,15 @@
 #!/bin/bash
 
-KERNEL=$1
-MODE=$2
-LOSS=$3
-BW=$4
-RTT=$5
-BUFFER=$6
-SEED=$7
-PARALLEL=${8}
-CCA=${9}
-DEADLINE_RUN=${10}
-DEADLINE_PERIOD=${11}
+DISK=$1
+LOSS=$2
+BW=$3
+RTT=$4
+BUFFER=$5
+SEED=$6
+PARALLEL=$7
+CCA=$8
+DEADLINE_RUN=$9
+DEADLINE_PERIOD=${10}
 
 . config_file
 
@@ -18,7 +17,7 @@ CPUS=2
 N=4
 
 if [ "$#" -lt 11 ]; then
-    echo "Usage: bash run.sh KERNEL['kernel6-1', 'kernel6-4', 'BBRv3', 'kernel5-10', 'kernel4-19', 'BBRv2'] MODE['iperf3', 'scp'] LOSS['random 0.1 25', 'gemodel 0.1 95 50 0.01'] BANDWIDTH[in mbit] RTT[in ms] BUFFER[in BDP] (SEED) (PARALLEL) (CCA) (CPUS)"
+    echo "Usage: bash run.sh DISK LOSS['random 0.1 25', 'gemodel 0.1 95 50 0.01'] BANDWIDTH[in mbit] RTT[in ms] BUFFER[in BDP] (SEED) (PARALLEL) (CCA) (CPUS)"
     echo Example: bash run.sh BBRv3 iperf3 "none" 800 20 3.0 1740753059782645566 1740753063782943194 1.0 cubic net.core.default_qdisc=pfifo_fast
     exit -1
 fi
@@ -28,26 +27,6 @@ LOSS_PARAMS=$(echo $LOSS | cut -d " " -f 2-)
 
 NETWORK_BUFFER_SIZE=$(python3 calculate_bdp.py --rate $BW --rtt $RTT --factor $BUFFER)
 SOCKET_BUFFER_SIZE=2147483647
-
-if [[ $KERNEL = "kernel6-1" ]]; then
-  DISK="debian.qcow2"
-elif [[ $KERNEL = "BBRv3" ]]; then
-  DISK="bbr3_debian.qcow2"
-elif [[ $KERNEL = "BBRv3_fixed" ]] || [[ $KERNEL = "BBRv3_fixed" ]]; then
-  DISK="bbr3_fixed_debian.qcow2"
-elif [[ $KERNEL = "BBRv3_fixed" ]]; then
-  DISK="bbr3_fixed_debian_n2.qcow2"
-elif [[ $KERNEL = "BBRv2" ]]; then
-  DISK="bbr2_debian-11.qcow2"
-elif [[ $KERNEL = "BBRv2_fixed" ]]; then
-  DISK="debian-11.qcow2"
-elif [[ $KERNEL = "kernel6-1_fixed" ]] || [[ $KERNEL = "kernel6-1_fixed" ]]; then
-  DISK="fixed_debian.qcow2"
-else
-  echo "Kernel not supported"
-  exit 0
-fi
-
 
 printf "\n"
 echo "Start measurement..."
@@ -137,7 +116,6 @@ JSON_CONFIG=$( jq -n \
                   --arg buffer_bdp "$BUFFER" \
                   --arg kernel "$KERNEL" \
                   --arg cca "$CCA" \
-                  --arg mode "$MODE" \
                   --arg loss_mode "$LOSS_MODE" \
                   --arg loss_params "$LOSS_PARAMS" \
                   --arg bw "$BW" \
@@ -149,7 +127,7 @@ JSON_CONFIG=$( jq -n \
                   --arg cpus "$CPUS" \
                   --arg deadline_run "$DEADLINE_RUN" \
                   --arg deadline_period "$DEADLINE_PERIOD" \
-                  '{chaos: "on_1", deadline_run: $deadline_run, deadline_period: $deadline_period, os: "debian", bdp: $buffer_bdp, setup: "new", cca: $cca, cpus: $cpus, kernel: $kernel, mode: $mode, loss: {mode: $loss_mode, params: $loss_params, seed1: $seed}, rate: $bw, delay_rtt: $rtt, buffer_size_bytes: $buffer, parallel: $parallel, socket_buffer: "2147483647", app_buffer: "default", n: $n, sysctl_cmd: "", adapter_type: "virtio", vm: "qemu_kvm"}')
+                  '{chaos: "on_1", deadline_run: $deadline_run, deadline_period: $deadline_period, os: "debian", bdp: $buffer_bdp, setup: "new", cca: $cca, cpus: $cpus, kernel: $kernel, mode: iperf3, loss: {mode: $loss_mode, params: $loss_params, seed1: $seed}, rate: $bw, delay_rtt: $rtt, buffer_size_bytes: $buffer, parallel: $parallel, socket_buffer: "2147483647", app_buffer: "default", n: $n, sysctl_cmd: "", adapter_type: "virtio", vm: "qemu_kvm"}')
 
 echo $JSON_CONFIG > ${LOGDIR}/meta.json
 
