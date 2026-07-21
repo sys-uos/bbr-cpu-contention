@@ -7,11 +7,19 @@ This repository contains an emulation framework for measuring Linux TCP in Virtu
 
 As shown in the figure above, the measurement framework consists of three physical machines:
 - the "runner" which orchestrates the measurements and hosts the sender VM,
-- the "emulator" which emuates different link conditions on the bottleneck link,
+- the "emulator" which bridges traffic between runner and receiver whilst emulating different link conditions on the outgoing interfaces,
 - and the TCP "receiver".
 
 The setup, in particular host and interface names, are to be configured in [measure/config_file](measure/config_file).
 The runner must have the folder `~/debianbuild/` containing a QEMU/KVM VM disk file, i.e., debian.qcow2.
+
+All scripts are to be run from a remote user with SSH access to the setup nodes.
+Make sure to appropriately configure the local network of the experimental setup, including L2-bridging or IP forwarding on the emulator node.
+
+After configuration, 
+- run `bash init_interfaces.sh` to setup the TAP interface for the VM,
+- add the desired run definitions in `run_multiple.sh`, and
+- run `bash launch.sh` to start the execution of runs.
 
 ## BBR Patches
 Our BBRv1 and BBRv3 patches, as detailed in the paper, can be found in [patches/](patches).
