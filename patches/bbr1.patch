@@ -1,0 +1,68 @@
+diff --git a/net/ipv4/tcp_bbr.c b/net/ipv4/tcp_bbr.c
+index 54eec33..cd0cbca 100644
+--- a/net/ipv4/tcp_bbr.c
++++ b/net/ipv4/tcp_bbr.c
+@@ -95,15 +95,13 @@ struct bbr {
+ 	u32     next_rtt_delivered; /* scb->tx.delivered at end of round */
+ 	u64	cycle_mstamp;	     /* time of this cycle phase start */
+ 	u32     mode:3,		     /* current bbr_mode in state machine */
+-		prev_ca_state:3,     /* CA state on previous ACK */
+ 		packet_conservation:1,  /* use packet conservation? */
+-		round_start:1,	     /* start of packet-timed tx->ack round? */
+-		idle_restart:1,	     /* restarting after idle? */
+ 		probe_rtt_round_done:1,  /* a BBR_PROBE_RTT round at 4 pkts? */
+-		unused:13,
++		smoothed_inflight:16,
+ 		lt_is_sampling:1,    /* taking long-term ("LT") samples now? */
+ 		lt_rtt_cnt:7,	     /* round trips in long-term interval */
+-		lt_use_bw:1;	     /* use lt_bw as our bw estimate? */
++		lt_use_bw:1,	     /* use lt_bw as our bw estimate? */
++		unused_a:2;
+ 	u32	lt_bw;		     /* LT est delivery rate in pkts/uS << 24 */
+ 	u32	lt_last_delivered;   /* LT intvl start: tp->delivered */
+ 	u32	lt_last_stamp;	     /* LT intvl start: tp->delivered_mstamp */
+@@ -114,7 +112,9 @@ struct bbr {
+ 		full_bw_cnt:2,	/* number of rounds without large bw gains */
+ 		cycle_idx:3,	/* current index in pacing_gain cycle array */
+ 		has_seen_rtt:1, /* have we seen an RTT sample yet? */
+-		unused_b:5;
++		prev_ca_state:3,     /* CA state on previous ACK */
++                round_start:1,       /* start of packet-timed tx->ack round? */
++                idle_restart:1;      /* restarting after idle? */
+ 	u32	prior_cwnd;	/* prior cwnd upon entering loss recovery */
+ 	u32	full_bw;	/* recent bw, to estimate if pipe is full */
+ 
+@@ -1001,6 +1001,24 @@ static void bbr_update_gains(struct sock *sk)
+ 				    BBR_UNIT :
+ 				    bbr_pacing_gain[bbr->cycle_idx]);
+ 		bbr->cwnd_gain	 = bbr_cwnd_gain;
++
++		// overwrite pacing gain in case of scheduling effects
++                struct tcp_sock *tp = tcp_sk(sk);
++                if (tp->rate_app_limited)
++                        return;
++
++		u32 expected_inflight = bbr_bdp(sk, bbr_bw(sk), BBR_UNIT);
++		if (bbr->smoothed_inflight == 0)
++                {
++                        bbr->smoothed_inflight = (tp->bytes_sent - tp->bytes_acked)/tp->mss_cache;
++                } else {
++			bbr->smoothed_inflight = bbr->smoothed_inflight - (bbr->smoothed_inflight >> 2) + (((tp->bytes_sent - tp->bytes_acked)/tp->mss_cache) >> 2);
++		}
++
++                u32 current_rtt_us = tp->srtt_us >> 3;
++		if (bbr->smoothed_inflight < expected_inflight && (!bbr->probe_rtt_done_stamp || after(tcp_jiffies32, bbr->probe_rtt_done_stamp + 3*usecs_to_jiffies(current_rtt_us))) ) {
++                	bbr->pacing_gain = bbr_high_gain;
++		}
+ 		break;
+ 	case BBR_PROBE_RTT:
+ 		bbr->pacing_gain = BBR_UNIT;
+@@ -1178,6 +1196,8 @@ static int __init bbr_register(void)
+ {
+ 	int ret;
+ 
++	pr_info("Register BBRv1 patch. \n");
++
+ 	BUILD_BUG_ON(sizeof(struct bbr) > ICSK_CA_PRIV_SIZE);
+ 
+ 	ret = register_btf_kfunc_id_set(BPF_PROG_TYPE_STRUCT_OPS, &tcp_bbr_kfunc_set);
