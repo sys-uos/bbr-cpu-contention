@@ -23,3 +23,13 @@ After configuration,
 
 ## BBR Patches
 Our BBRv1 and BBRv3 patches, as detailed in the paper, can be found in [patches/](patches).
+
+
+## Results
+[results/](results) contains the final dataset and scripts used to produce the plots shown in the paper.
+
+**How to reproduce**:
+1) Clone, and extract dataset `data.tar.gz` (decompressed size: 584 MB).
+2) Run the `figure_*.ipynb` notebooks (tested with Python 3.12.3 kernel).
+3) Pdf plots are generated into `results/plots/figures`. 
+4) Some notebooks can generate multiple plots from the paper, e.g. `figure_7_14.ipynb`. Use the switch in the first code cell to control which figure is produced.
