@@ -1,7 +1,9 @@
 # BBR in Virtual Machines under CPU Contention
 
+This repository contains artifacts and code contributions presented in our paper "2BRobust - Mitigating TCP BBR Performance Degradation in Virtual Machines under CPU Contention" accepted for the 2026 ACM CoNEXT.
+
 ## Measurement Framework
-This repository contains an emulation framework for measuring Linux TCP in Virtual Machines under CPU contention. For details, refer to our paper "2BRobust - Mitigating TCP BBR Performance Degradation in Virtual Machines under CPU Contention" accepted for the 2026 ACM CoNEXT.
+[measure/](measure) contains an emulation framework for measuring Linux TCP in Virtual Machines under CPU contention. For details, refer to our paper.
 
 <img width="1152" height="218" alt="framework" src="https://github.com/user-attachments/assets/a779c91d-8f66-40b1-87ed-379d657bc7ca" />
 
@@ -29,7 +31,7 @@ Our BBRv1 and BBRv3 patches, as detailed in the paper, can be found in [patches/
 [results/](results) contains the final dataset and scripts used to produce the plots shown in the paper.
 
 **How to reproduce**:
-1) Clone, and extract dataset `data.tar.gz` (decompressed size: 584 MB).
-2) Run the `figure_*.ipynb` notebooks (tested with Python 3.12.3 kernel).
+1) Clone, and extract dataset `results/data.tar.xz` (decompressed size: 584 MB).
+2) Run the `results/plots/figure_*.ipynb` notebooks (tested with Python 3.12.3 kernel).
 3) Pdf plots are generated into `results/plots/figures`. 
 4) Some notebooks can generate multiple plots from the paper, e.g. `figure_7_14.ipynb`. Use the switch in the first code cell to control which figure is produced.
