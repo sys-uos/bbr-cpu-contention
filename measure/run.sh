@@ -50,6 +50,7 @@ EOA
 # Prepare and launch iperf3 receiver
 ssh $RECEIVER_SSH -o LogLevel=FATAL << EOB
 sudo rm -rf /tmp/*
+sudo apt install -y iperf3
 sudo sysctl -w net.core.rmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.core.wmem_max=$SOCKET_BUFFER_SIZE
 sudo sysctl -w net.ipv4.tcp_rmem="4096 131072 $SOCKET_BUFFER_SIZE"
@@ -83,6 +84,7 @@ sleep 1
 # Run iperf3 measurement from VM
 ssh $VM_SSH << EOB
  rm iperf_*.json
+ apt install -y iperf3
  
  sysctl -w net.core.rmem_max=$SOCKET_BUFFER_SIZE
  sysctl -w net.core.wmem_max=$SOCKET_BUFFER_SIZE
